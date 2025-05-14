@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercices de Fractions - Élève</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #exercise, #result {
+            margin: 20px;
+            font-size: 1.2em;
+        }
+        input {
+            padding: 5px;
+            margin: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Exercice d'Addition de Fractions</h1>
+    <label>Nom de l'élève : </label>
+    <input type="text" id="studentName" placeholder="Entrez votre nom">
+    <div id="exercise"></div>
+    <input type="text" id="answerNumerator" placeholder="Numérateur">
+    <span>/</span>
+    <input type="text" id="answerDenominator" placeholder="Dénominateur">
+    <button onclick="checkAnswer()">Vérifier</button>
+    <div id="result"></div>
+    <p>Score : <span id="score">0</span></p>
+    <button onclick="newExercise()">Nouvel exercice</button>
+    <button onclick="sendToTeacher()">Envoyer au professeur</button>
+
+    <script>
+        let score = 0;
+        let errors = [];
+        let currentExercise = {};
+
+        // Fonction pour générer une fraction aléatoire
+        function generateFraction() {
+            const numerator = Math.floor(Math.random() * 10) + 1; // 1 à 10
+            const denominator = Math.floor(Math.random() * 9) + 2; // 2 à 10
+            return { numerator, denominator };
+        }
+
+        // Calcul du PGCD pour simplifier les fractions
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        // Simplifier une fraction
+        function simplifyFraction(num, den) {
+            const divisor = gcd(Math.abs(num), Math.abs(den));
+            return { numerator: num / divisor, denominator: den / divisor };
+        }
+
+        // Générer un nouvel exercice
+        function newExercise() {
+            const frac1 = generateFraction();
+            const frac2 = generateFraction();
+            currentExercise = { frac1, frac2 };
+
+            // Afficher l'exercice
+            document.getElementById('exercise').innerHTML = 
+                `${frac1.numerator}/${frac1.denominator} + ${frac2.numerator}/${frac2.denominator} = ?`;
+            document.getElementById('answerNumerator').value = '';
+            document.getElementById('answerDenominator').value = '';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        // Vérifier la réponse
+        function checkAnswer() {
+            const userNum = parseInt(document.getElementById('answerNumerator').value);
+            const userDen = parseInt(document.getElementById('answerDenominator').value);
+            
+            if (isNaN(userNum) || isNaN(userDen) || userDen === 0) {
+                document.getElementById('result').innerHTML = 'Veuillez entrer une fraction valide.';
+                return;
+            }
+
+            // Calcul de la réponse correcte
+            const { frac1, frac2 } = currentExercise;
+            const commonDen = frac1.denominator * frac2.denominator;
+            const newNum1 = frac1.numerator * frac2.denominator;
+            const newNum2 = frac2.numerator * frac1.denominator;
+            const resultNum = newNum1 + newNum2;
+            const simplified = simplifyFraction(resultNum, commonDen);
+
+            // Vérification
+            const userSimplified = simplifyFraction(userNum, userDen);
+            if (userSimplified.numerator === simplified.numerator && 
+                userSimplified.denominator === simplified.denominator) {
+                document.getElementById('result').innerHTML = 'Correct !';
+                score++;
+                document.getElementById('score').innerText = score;
+            } else {
+                document.getElementById('result').innerHTML = 
+                    `Faux. La réponse correcte est ${simplified.numerator}/${simplified.denominator}.`;
+                errors.push({
+                    exercise: `${frac1.numerator}/${frac1.denominator} + ${frac2.numerator}/${frac2.denominator}`,
+                    userAnswer: `${userNum}/${userDen}`,
+                    correctAnswer: `${simplified.numerator}/${simplified.denominator}`
+                });
+            }
+        }
+
+        // Envoyer les résultats au professeur
+        async function sendToTeacher() {
+            const studentName = document.getElementById('studentName').value.trim();
+            if (!studentName) {
+                alert('Veuillez entrer votre nom !');
+                return;
+            }
+
+            const data = {
+                student: studentName,
+                score: score,
+                errors: errors,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch('https://votre-serveur.com/api/results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    alert('Résultats envoyés au professeur !');
+                    score = 0;
+                    errors = [];
+                    document.getElementById('score').innerText = score;
+                    document.getElementById('studentName').value = '';
+                    newExercise();
+                } else {
+                    alert('Erreur lors de l\'envoi des résultats.');
+                }
+            } catch (error) {
+                alert('Erreur réseau : ' + error.message);
+            }
+        }
+
+        // Charger un nouvel exercice au démarrage
+        newExercise();
+    </script>
+</body>
+</html>

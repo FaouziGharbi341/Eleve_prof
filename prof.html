@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats des Élèves - Professeur</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Résultats des Élèves</h1>
+    <label>Mot de passe professeur : </label>
+    <input type="password" id="teacherPassword" placeholder="Mot de passe">
+    <button onclick="loadResults()">Charger les résultats</button>
+    <div id="results"></div>
+
+    <script>
+        async function loadResults() {
+            const password = document.getElementById('teacherPassword').value;
+            if (password !== 'votreMotDePasse') { // Remplacez par un vrai mot de passe
+                document.getElementById('results').innerHTML = 'Mot de passe incorrect.';
+                return;
+            }
+
+            try {
+                const response = await fetch('https://votre-serveur.com/api/results');
+                const results = await response.json();
+
+                if (!results || results.length === 0) {
+                    document.getElementById('results').innerHTML = 'Aucun résultat disponible.';
+                    return;
+                }
+
+                let html = '<h2>Résultats des élèves</h2>';
+                results.forEach(data => {
+                    html += `<h3>${data.student} (Envoyé le ${new Date(data.timestamp).toLocaleString()})</h3>`;
+                    html += `<p>Score : ${data.score}</p>`;
+                    if (data.errors.length > 0) {
+                        html += '<h4>Erreurs :</h4>';
+                        html += '<table>';
+                        html += '<tr><th>Exercice</th><th>Réponse de l\'élève</th><th>Réponse correcte</th></tr>';
+                        data.errors.forEach(error => {
+                            html += `<tr>
+                                <td>${error.exercise}</td>
+                                <td>${error.userAnswer}</td>
+                                <td>${error.correctAnswer}</td>
+                            </tr>`;
+                        });
+                        html += '</table>';
+                    } else {
+                        html += '<p>Aucune erreur.</p>';
+                    }
+                });
+
+                document.getElementById('results').innerHTML = html;
+            } catch (error) {
+                document.getElementById('results').innerHTML = 'Erreur réseau : ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
